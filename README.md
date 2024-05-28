@@ -1,2 +1,3 @@
-# CircuitX
-VSD_IIITB Ethical RISC-V IoT Hackathon Repository of team CircuitX.
+# Secure Lock Using VSDSquadron Mini
+## Introduction
+Will be updated soon.
