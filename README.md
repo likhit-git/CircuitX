@@ -18,7 +18,7 @@ A separate counter can be added to tell how many people have entered the room. U
 - Jumper Wires
 
 ## Circuit Connection
-
+![Screenshot 2024-05-29 175311](https://github.com/likhit-git/CircuitX/assets/105515867/28991b3e-03e7-4b35-bee8-352dfdc6146b)
 
 ## Table of Pin Connection
 Keypad Pin | VSD Squadron Mini Pin | Function
