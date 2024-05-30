@@ -23,13 +23,13 @@ A separate counter can be added to tell how many people have entered the room. U
 ## Table of Pin Connection
 Keypad Pin | VSD Squadron Mini Pin | Function
 | ------------- | ------------- |------------- |
-R1 | PD0 | Row 1
-R2 | PD1 | Row 2
-R3 | PD2 | Row 3
+R1 | PD6 | Row 1
+R2 | PD5 | Row 2
+R3 | PD4 | Row 3
 R4 | PD3 | Row 4
-C1 | PD4 | Column 1
-C2 | PD5 | Column 2
-C3 | PD6 | Column 3
+C1 | PD2 | Column 1
+C2 | PD1 | Column 2
+C3 | PD0 | Column 3
 
 LCD I2C Adapter Pin | VSD Squadron Mini Pin
 | ------------- |-------------|
