@@ -48,7 +48,9 @@ LED2 | PC0 | Red | Door Closed
 #include <ch32v00x.h>
 #include <debug.h>
 #include <stdio.h>
-#include <string.h> // Include string.h for memcmp
+#include <string.h> 
+'''
+// Include string.h for memcmp
 
 #define HIGH Bit_SET
 #define LOW Bit_RESET
@@ -140,10 +142,11 @@ void i2c_ACK(void) {
 }
 
 // Function to send a command to the LCD
+
 void lcd_send_cmd(unsigned char cmd) {
     unsigned char cmd_l = (cmd << 4) & 0xf0;
     unsigned char cmd_u = cmd & 0xf0;
-
+    
     i2c_start();
     i2c_write(LCD_Address << 1);
     i2c_ACK();
@@ -188,6 +191,7 @@ void lcd_send_data(unsigned char data) {
 }
 
 // Function to send a string to the LCD
+
 void lcd_send_str(unsigned char *str) {
     while (*str) {
         lcd_send_data(*str++);
@@ -503,7 +507,7 @@ void HardFault_Handler(void) {
 }
 '''
 
-
-
-
+# Deemo Video
+(Not yet completed)
+![20240603_000323 (1)](https://github.com/likhit-git/CircuitX/assets/105515867/47e6bc1e-2c50-4a78-bdaf-4473fd47ceb7)
 
