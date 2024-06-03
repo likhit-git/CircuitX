@@ -505,7 +505,7 @@ void HardFault_Handler(void) {
     while (1) {
     }
 }
-'''
+```
 
 # Deemo Video
 (Not yet completed)
