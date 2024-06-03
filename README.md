@@ -44,7 +44,7 @@ LED1 | PD7 | Green | Door Open
 LED2 | PC0 | Red | Door Closed
 
 # Working Code
-'''
+```C
 #include <ch32v00x.h>
 #include <debug.h>
 #include <stdio.h>
