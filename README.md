@@ -48,9 +48,7 @@ LED2 | PC0 | Red | Door Closed
 #include <ch32v00x.h>
 #include <debug.h>
 #include <stdio.h>
-#include <string.h> 
-'''
-// Include string.h for memcmp
+#include <string.h> // Include string.h for memcmp
 
 #define HIGH Bit_SET
 #define LOW Bit_RESET
@@ -86,15 +84,52 @@ void Delay_Init(void);
 void Delay_Ms(uint32_t n);
 void Delay_Us(uint32_t n);
 
-// int compare_password(const char *entered_password, const char *correct_password);
 
-
+// variables
 unsigned char val = 0;
 unsigned char key;
-unsigned char password[PASSWORD_LENGTH] = {4, 4, 4, 4}; // Example password, change as needed
+unsigned char correct_password[PASSWORD_LENGTH] = {4, 4, 4, 4}; // Example password, we can change as needed
 unsigned char entered_password[PASSWORD_LENGTH];
 unsigned char idx = 0;
 uint8_t door_state = DOOR_CLOSED;
+
+
+// Function to scan the keypad
+unsigned char scan_key(void) {
+    GPIO_WriteBit(GPIOD, R1, LOW);
+    GPIO_WriteBit(GPIOD, R2, HIGH);
+    GPIO_WriteBit(GPIOD, R3, HIGH);
+    GPIO_WriteBit(GPIOD, R4, HIGH);
+    if (GPIO_ReadInputDataBit(GPIOD, C1) == LOW) { Delay_Ms(20); while (GPIO_ReadInputDataBit(GPIOD, C1) == LOW); return '1'; }
+    if (GPIO_ReadInputDataBit(GPIOD, C2) == LOW) { Delay_Ms(20); while (GPIO_ReadInputDataBit(GPIOD, C2) == LOW); return '2'; }
+    if (GPIO_ReadInputDataBit(GPIOD, C3) == LOW) { Delay_Ms(20); while (GPIO_ReadInputDataBit(GPIOD, C3) == LOW); return '3'; }
+
+    GPIO_WriteBit(GPIOD, R1, HIGH);
+    GPIO_WriteBit(GPIOD, R2, LOW);
+    GPIO_WriteBit(GPIOD, R3, HIGH);
+    GPIO_WriteBit(GPIOD, R4, HIGH);
+    if (GPIO_ReadInputDataBit(GPIOD, C1) == LOW) { Delay_Ms(20); while (GPIO_ReadInputDataBit(GPIOD, C1) == LOW); return '4'; }
+    if (GPIO_ReadInputDataBit(GPIOD, C2) == LOW) { Delay_Ms(20); while (GPIO_ReadInputDataBit(GPIOD, C2) == LOW); return '5'; }
+    if (GPIO_ReadInputDataBit(GPIOD, C3) == LOW) { Delay_Ms(20); while (GPIO_ReadInputDataBit(GPIOD, C3) == LOW); return '6'; }
+
+    GPIO_WriteBit(GPIOD, R1, HIGH);
+    GPIO_WriteBit(GPIOD, R2, HIGH);
+    GPIO_WriteBit(GPIOD, R3, LOW);
+    GPIO_WriteBit(GPIOD, R4, HIGH);
+    if (GPIO_ReadInputDataBit(GPIOD, C1) == LOW) { Delay_Ms(20); while (GPIO_ReadInputDataBit(GPIOD, C1) == LOW); return '7'; }
+    if (GPIO_ReadInputDataBit(GPIOD, C2) == LOW) { Delay_Ms(20); while (GPIO_ReadInputDataBit(GPIOD, C2) == LOW); return '8'; }
+    if (GPIO_ReadInputDataBit(GPIOD, C3) == LOW) { Delay_Ms(20); while (GPIO_ReadInputDataBit(GPIOD, C3) == LOW); return '9'; }
+
+    GPIO_WriteBit(GPIOD, R1, HIGH);
+    GPIO_WriteBit(GPIOD, R2, HIGH);
+    GPIO_WriteBit(GPIOD, R3, HIGH);
+    GPIO_WriteBit(GPIOD, R4, LOW);
+    if (GPIO_ReadInputDataBit(GPIOD, C1) == LOW) { Delay_Ms(20); while (GPIO_ReadInputDataBit(GPIOD, C1) == LOW); return '*'; }
+    if (GPIO_ReadInputDataBit(GPIOD, C2) == LOW) { Delay_Ms(20); while (GPIO_ReadInputDataBit(GPIOD, C2) == LOW); return '0'; }
+    if (GPIO_ReadInputDataBit(GPIOD, C3) == LOW) { Delay_Ms(20); while (GPIO_ReadInputDataBit(GPIOD, C3) == LOW); return '#'; }
+
+    return 0;
+}
 
 
 // Function to write a byte of data to the I2C bus
@@ -142,11 +177,10 @@ void i2c_ACK(void) {
 }
 
 // Function to send a command to the LCD
-
 void lcd_send_cmd(unsigned char cmd) {
     unsigned char cmd_l = (cmd << 4) & 0xf0;
     unsigned char cmd_u = cmd & 0xf0;
-    
+
     i2c_start();
     i2c_write(LCD_Address << 1);
     i2c_ACK();
@@ -191,7 +225,6 @@ void lcd_send_data(unsigned char data) {
 }
 
 // Function to send a string to the LCD
-
 void lcd_send_str(unsigned char *str) {
     while (*str) {
         lcd_send_data(*str++);
@@ -224,7 +257,7 @@ void lcd_init(void) {
     lcd_send_cmd(0x0C);     // Display On, Cursor Off, Blink Off
     Delay_Us(200);          // Wait for the command to be processed
     lcd_send_cmd(0x80);
-    Delay_Ms(2);
+    Delay_Ms(4);
   
 }
 
@@ -251,7 +284,7 @@ int main(void) {
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
 
-        // Configure keypad rows as outputs
+    // Configure keypad rows as outputs
     GPIO_InitStructure.GPIO_Pin = R1 | R2 | R3 | R4;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
@@ -272,7 +305,7 @@ int main(void) {
     lcd_init();
     lcd_send_str((unsigned char *)"Enter Password:");
     Delay_Ms(2);
-    Delay_Ms(2000);
+    // Delay_Ms(2000);
     lcd_send_cmd(0xC0); // Move the cursor to second row first column
     Delay_Ms(2);
     // unsigned char key = scan_key();
@@ -287,43 +320,32 @@ int main(void) {
 
     while (1) {
         key = scan_key();
-        Delay_Ms(2);
 
-        if (key >= 0 && key <= 9) { // If a digit key is pressed
+        if (key >= '0' && key <= '9') { // If a digit key is pressed
             if (idx < PASSWORD_LENGTH) {
-                entered_password[idx++] = key;
-                char key_str[2];  // Buffer to hold the key character and null terminator
-                key_str[0] = key + '0';  // Convert the key value to a character ('0' - '9')
-                key_str[1] = '\0';  // Null terminator
-                // Display '*' on LCD to indicate a digit entry
-                lcd_send_data((unsigned char)key_str[0]);
-                Delay_Ms(2);
+                entered_password[idx++] = key - '0'; // Convert char to int and store
+                lcd_send_data('*');  // Display '*' on LCD to indicate a digit entry
             }
-        } else if (key == 10) {  // * key to clear input
+        } else if (key == '*') {  // * key to clear input
             idx = 0;
             lcd_send_cmd(0x01);  // Clear display
             Delay_Ms(6);
-            lcd_send_cmd(0x40); // Move the cursor to fist row first column
-            Delay_Ms(2);           
+            lcd_send_cmd(0x80); // Move the cursor to the first row, first column
             lcd_send_str((unsigned char *)"Enter Password:");
-            Delay_Ms(2);
-
-        } else if (key == 11) {  // # key to submit
+        } else if (key == '#') {  // # key to submit
             if (idx == PASSWORD_LENGTH) {
                 unsigned char correct = 1;
                 for (unsigned char i = 0; i < PASSWORD_LENGTH; i++) {
-                    if (entered_password[i] != password[i]) {
+                    if (entered_password[i] != correct_password[i]) {
                         correct = 0;
                         break;
                     }
                 }
                 lcd_send_cmd(0x01);  // Clear display
                 Delay_Ms(2);
-                lcd_send_cmd(0x80); // Move the cursor to fist row first column
-                Delay_Ms(2);
+                lcd_send_cmd(0x80); // Move the cursor to the first row, first column
                 if (correct) {
                     lcd_send_str((unsigned char *)"Door Opened");
-                    Delay_Ms(2);
                     GPIO_WriteBit(GPIOD, LED_PIN, HIGH);
                     door_state = DOOR_OPENED;
                     Delay_Ms(2000);
@@ -331,174 +353,31 @@ int main(void) {
                     GPIO_WriteBit(GPIOD, LED_PIN, LOW);
                 } else {
                     lcd_send_str((unsigned char *)"Incorrect Password");
-                    Delay_Ms(2);
                 }
             } else {
                 lcd_send_cmd(0x01);  // Clear display
                 Delay_Ms(2);
-                lcd_send_cmd(0x10); // Move the cursor to fist row first column
-                Delay_Ms(2);
+                lcd_send_cmd(0x80); // Move the cursor to the first row, first column
                 lcd_send_str((unsigned char *)"Invalid Password");
-                Delay_Ms(2);
             }
-            idx=0;
-
+            idx = 0; // Reset index after checking the password
+            Delay_Ms(2000); // Add delay to allow the user to see the message
+            lcd_send_cmd(0x01);  // Clear display
+            lcd_send_cmd(0x80); // Move the cursor to the first row, first column
+            lcd_send_str((unsigned char *)"Enter Password:");
         }
-        // Delay for debouncing and to allow for keypad scanning
-        Delay_Ms(100);
-
+        Delay_Ms(200); // Delay for debouncing and to allow for keypad scanning
     }
 
-    return 0;
-}
-
-//    while (1) {
-//         key = scan_key();
-//         if (key) {
-//             // Debounce delay
-//             Delay_Ms(50);
-//             if (key == scan_key()) { // Check if the key is still pressed
-//                 entered_password[idx++] = key;
-//                 char key_str[2];  // Buffer to hold the key character and null terminator
-//                 key_str[0] = key + '0';  // Convert the key value to a character ('0' - '9')
-//                 key_str[1] = '\0';  // Null terminator
-//                 // lcd_send_cmd(0xC0 + idx - 1); // Move cursor to the correct position on the second line
-//                 lcd_send_data((unsigned char)key_str[0]); // Display an asterisk for each entered digit
-
-//                 if (idx == PASSWORD_LENGTH) {
-//                     if (compare_password(entered_password, password)) {
-//                         GPIO_WriteBit(GPIOC, LED_PIN, HIGH);
-//                         lcd_send_cmd(0x01); // Clear display
-//                         Delay_Ms(2);
-//                         lcd_send_cmd(0x80); // Move to the beginning of the first line
-//                         Delay_Ms(2);
-//                         lcd_send_str((unsigned char *)"Access Granted");
-//                         Delay_Ms(3000);
-//                         GPIO_WriteBit(GPIOC, LED_PIN, LOW);
-//                     } else {
-//                         lcd_send_cmd(0x01); // Clear display
-//                         Delay_Ms(2);
-//                         lcd_send_cmd(0x80); // Move to the beginning of the first line
-//                         Delay_Ms(2);
-//                         lcd_send_str((unsigned char *)"Invalid Password");
-//                         Delay_Ms(2);
-//                         lcd_send_cmd(0xC0); // Move to the beginning of the second line
-//                         Delay_Ms(3000);
-//                     }
-//                     // Reset index and entered password
-//                     idx = 0;
-//                     memset(entered_password, 0, PASSWORD_LENGTH);
-//                     lcd_send_cmd(0x01); // Clear display
-//                     Delay_Ms(2);
-//                     lcd_send_cmd(0x80); // Move to the beginning of the first line
-//                     Delay_Ms(2);
-//                     lcd_send_str((unsigned char *)"Enter Password:");
-//                 }
-//             }
-//         }
-//     }
-// }
-
-
-
-void update(unsigned char data) {
-    val = data;
-}
-
-// Function to scan the keypad
-unsigned char scan_key(void) {
-    GPIO_WriteBit(GPIOD, R1, LOW);
-    GPIO_WriteBit(GPIOD, R2, HIGH);
-    GPIO_WriteBit(GPIOD, R3, HIGH);
-    GPIO_WriteBit(GPIOD, R4, HIGH);
-    if (GPIO_ReadInputDataBit(GPIOD, C1) == LOW) { while (GPIO_ReadInputDataBit(GPIOD, C1) == LOW); return '1'; }
-    if (GPIO_ReadInputDataBit(GPIOD, C2) == LOW) { while (GPIO_ReadInputDataBit(GPIOD, C2) == LOW); return '2'; }
-    if (GPIO_ReadInputDataBit(GPIOD, C3) == LOW) { while (GPIO_ReadInputDataBit(GPIOD, C3) == LOW); return '3'; }
-
-    GPIO_WriteBit(GPIOD, R1, HIGH);
-    GPIO_WriteBit(GPIOD, R2, LOW);
-    GPIO_WriteBit(GPIOD, R3, HIGH);
-    GPIO_WriteBit(GPIOD, R4, HIGH);
-    if (GPIO_ReadInputDataBit(GPIOD, C1) == LOW) { while (GPIO_ReadInputDataBit(GPIOD, C1) == LOW); return '4'; }
-    if (GPIO_ReadInputDataBit(GPIOD, C2) == LOW) { while (GPIO_ReadInputDataBit(GPIOD, C2) == LOW); return '5'; }
-    if (GPIO_ReadInputDataBit(GPIOD, C3) == LOW) { while (GPIO_ReadInputDataBit(GPIOD, C3) == LOW); return '6'; }
-
-    GPIO_WriteBit(GPIOD, R1, HIGH);
-    GPIO_WriteBit(GPIOD, R2, HIGH);
-    GPIO_WriteBit(GPIOD, R3, LOW);
-    GPIO_WriteBit(GPIOD, R4, HIGH);
-    if (GPIO_ReadInputDataBit(GPIOD, C1) == LOW) { while (GPIO_ReadInputDataBit(GPIOD, C1) == LOW); return '7'; }
-    if (GPIO_ReadInputDataBit(GPIOD, C2) == LOW) { while (GPIO_ReadInputDataBit(GPIOD, C2) == LOW); return '8'; }
-    if (GPIO_ReadInputDataBit(GPIOD, C3) == LOW) { while (GPIO_ReadInputDataBit(GPIOD, C3) == LOW); return '9'; }
-
-    GPIO_WriteBit(GPIOD, R1, HIGH);
-    GPIO_WriteBit(GPIOD, R2, HIGH);
-    GPIO_WriteBit(GPIOD, R3, HIGH);
-    GPIO_WriteBit(GPIOD, R4, LOW);
-    if (GPIO_ReadInputDataBit(GPIOD, C1) == LOW) { while (GPIO_ReadInputDataBit(GPIOD, C1) == LOW); return '*'; }
-    if (GPIO_ReadInputDataBit(GPIOD, C2) == LOW) { while (GPIO_ReadInputDataBit(GPIOD, C2) == LOW); return '0'; }
-    if (GPIO_ReadInputDataBit(GPIOD, C3) == LOW) { while (GPIO_ReadInputDataBit(GPIOD, C3) == LOW); return '#'; }
 
     return 0;
 }
 
 
-// unsigned char scan_key(void){
-//     val = 0; // Reset val to detect new key press
-//     while(val==0) {
-//         // Set all rows high
-
-
-//         GPIO_WriteBit(GPIOD, R1, HIGH);
-//         GPIO_WriteBit(GPIOD, R2, HIGH);
-//         GPIO_WriteBit(GPIOD, R3, HIGH);
-//         GPIO_WriteBit(GPIOD, R4, HIGH);
-
-//         val = 0; // Reset val to detect new key press
-
-//         // Scan each row
-//         GPIO_WriteBit(GPIOD, R1, LOW);
-//         Delay_Us(10); // Small delay for settling
-//         if (GPIO_ReadInputDataBit(GPIOD, C1) == LOW) update(1);
-//         if (GPIO_ReadInputDataBit(GPIOD, C2) == LOW) update(2);
-//         if (GPIO_ReadInputDataBit(GPIOD, C3) == LOW) update(3);
-//         GPIO_WriteBit(GPIOD, R1, HIGH);
-
-//         GPIO_WriteBit(GPIOD, R2, LOW);
-//         Delay_Us(10); // Small delay for settling
-//         if (GPIO_ReadInputDataBit(GPIOD, C1) == LOW) update(4);
-//         if (GPIO_ReadInputDataBit(GPIOD, C2) == LOW) update(5);
-//         if (GPIO_ReadInputDataBit(GPIOD, C3) == LOW) update(6);
-//         GPIO_WriteBit(GPIOD, R2, HIGH);
-
-//         GPIO_WriteBit(GPIOD, R3, LOW);
-//         Delay_Us(10); // Small delay for settling
-//         if (GPIO_ReadInputDataBit(GPIOD, C1) == LOW) update(7);
-//         if (GPIO_ReadInputDataBit(GPIOD, C2) == LOW) update(8);
-//         if (GPIO_ReadInputDataBit(GPIOD, C3) == LOW) update(9);
-//         GPIO_WriteBit(GPIOD, R3, HIGH);
-
-//         GPIO_WriteBit(GPIOD, R4, LOW);
-//         Delay_Us(10); // Small delay for settling
-//         if (GPIO_ReadInputDataBit(GPIOD, C1) == LOW) update(10); // *
-//         if (GPIO_ReadInputDataBit(GPIOD, C2) == LOW) update(0);  // 0
-//         if (GPIO_ReadInputDataBit(GPIOD, C3) == LOW) update(11); // #
-//         GPIO_WriteBit(GPIOD, R4, HIGH);
-        
-//         // GPIO_WriteBit(GPIOD, LED_PIN, HIGH); // Turn on LED
-
-//         // Indicate key press using LED
-//         // if (val != 0) {
-//         //     GPIO_WriteBit(GPIOD, LED_PIN, HIGH); // Turn on LED
-//         // } else {
-//         //     GPIO_WriteBit(GPIOD, LED_PIN, LOW);  // Turn off LED
-//         // }
-
-//         // Optional: Add a delay between keypad scans to debounce
-//         Delay_Ms(100);
-//     }
-//     return val;
+// void update(unsigned char data) {
+//     val = data;
 // }
+
 
 void NMI_Handler(void) {}
 void HardFault_Handler(void) {
@@ -507,7 +386,12 @@ void HardFault_Handler(void) {
 }
 ```
 
-# Deemo Video
-(Not yet completed)
-![20240603_000323 (1)](https://github.com/likhit-git/CircuitX/assets/105515867/47e6bc1e-2c50-4a78-bdaf-4473fd47ceb7)
+## Demo Video
+(Bugs exist, current progress updated, simulation video also attached)
+Simulation Video:
+https://github.com/likhit-git/CircuitX/assets/105515867/4b0fc243-f41f-4252-bfa9-b6a8bf7f0546
+
+Progress Demo Video:
+https://github.com/likhit-git/CircuitX/assets/105515867/7b5e1cf1-1691-457b-bb08-c09c36ae211f
+
 
